@@ -1,5 +1,5 @@
 %% loading file tree
-home = 'C:\Users\01140724\Documents\Kajetany\pupillometry-pre-processing';
+home = '';%%home directory
 addpath(genpath(home))
 cd (home)
 sub_list = dir([home '/dane']);
