@@ -2,7 +2,7 @@
 clues = {  'CS_Minus' 'to_win_CS_Plus_Cash' 'to_lose_CS_Plus_Cash' 'to_lose_CS_Plus_Porn'    'to_win_CS_Plus_Porn'  };
 rewards = {'NoUCsm' 'plan_No_UCSp_cash' 'plan_UCSp_porn' 'unpl_No_UCSp_porn'};
 %% loading file tree
-home = 'C:\Users\01140724\Documents\Kajetany\pupillometry-pre-processing';
+home = '';%%home directory
 addpath(genpath(home))
 cd (home)
 sub_list = dir([home '/dane']);
