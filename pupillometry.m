@@ -1,3 +1,6 @@
+%%epoch cutting conditions
+clues = {  'CS_Minus' 'to_win_CS_Plus_Cash' 'to_lose_CS_Plus_Cash' 'to_lose_CS_Plus_Porn'    'to_win_CS_Plus_Porn'  };
+rewards = {'NoUCsm' 'plan_No_UCSp_cash' 'plan_UCSp_porn' 'unpl_No_UCSp_porn'};
 %% loading file tree
 home = 'C:\Users\01140724\Documents\Kajetany\pupillometry-pre-processing';
 addpath(genpath(home))
@@ -16,12 +19,21 @@ for k = 1 : length(sub_list)
     
     eeg = loadEegSet(sub_list(k));
     eeg = eeg_checkset( eeg );
-    eeg = pop_epoch( eeg, {  'CS_Minus' 'to_win_CS_Plus_Cash' 'to_lose_CS_Plus_Cash' 'to_lose_CS_Plus_Porn'    'to_win_CS_Plus_Porn'  }, [-3  8], 'epochinfo', 'yes');
+    
+    eeg1 = eeg;
+    eeg1 = pop_epoch( eeg1, clues, [-3  8], 'epochinfo', 'yes');
+    eeg1.setname = eeg1.setname(1: end - 7);
+    eeg1.setname = strcat(eeg1.setname, '_clues');
+    eeg1.condition = 'clues';
+    eeg1 = pop_rmbase( eeg1, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
+    [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg1);
+    
+    eeg = pop_epoch( eeg, rewards, [-3  8], 'epochinfo', 'yes');
+    eeg.setname = eeg.setname(1: end - 7);
+    eeg.setname = strcat(eeg.setname, '_rewards');
+    eeg.condition = 'rewards';
     eeg = pop_rmbase( eeg, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
-    
     [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg);
-    
-
 end
 
 eeglab redraw
@@ -47,7 +59,7 @@ function interpolatedData = interpolateIntervals(data, intervals)
                          mean(data(intervals(counter, 2) + 1 : intervals(counter, 2) + 1 + MEAN_RANGE)), ...
                          (intervals(counter, 2) - stop + 1))]; %#ok<AGROW>
             
-           i = intervals(counter,2) + 1; %#ok<FXSET>
+           i = intervals(counter,2) + 1; 
            counter = counter + 1;
            if(counter < intervalsRows)
                 stop = intervals(counter,1);
@@ -100,9 +112,30 @@ end
 %%
 function eeg = loadEegSet(file)
     DEBUG_PLOT = true;
-    %% loading raw data
-    eeg = eeg_emptyset();
 
+    eeg = eeg_emptyset();
+    
+    %% loading some study infromation
+    eeg.setname = file.name(1 : end-4);
+    eeg.trials = 1;
+    eeg.srate = 60;
+    underscoresIndexes = strfind(eeg.setname,'_');
+    eeg.subject = file.name(1 : underscoresIndexes(1) - 1);
+    
+    underscoresData = eeg.setname((underscoresIndexes(1) + 1) : end);
+    
+    if(length(underscoresData) == 1)
+        eeg.group = 1;
+        eeg.session = str2num(underscoresData(1));
+    elseif (length(underscoresData) == 3)
+         eeg.group = 2;
+         eeg.session = str2num(underscoresData(3));
+    else
+        eeg.group = 0;
+        eeg.session = 0;
+    end
+    
+    %% loading raw data
     filename = [file.folder '/' file.name];
     formatSpec = '%f%f%s%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%s%[^\n\r]';
     fileID = fopen(filename,'r');
@@ -159,10 +192,7 @@ function eeg = loadEegSet(file)
         end
     end
 
-    %% setting some eeg atributes 
-    eeg.setname = file.name;
-    eeg.trials = 1;
-    eeg.srate = 60;  
+    %% setting data   
     eeg.pnts = length([s(:).TotalTime]);
     eeg.times(1,:) = [s(:).TotalTime];
      
