@@ -2,7 +2,7 @@
 clues = {  'CS_Minus' 'to_win_CS_Plus_Cash' 'to_lose_CS_Plus_Cash' 'to_lose_CS_Plus_Porn'    'to_win_CS_Plus_Porn'  };
 rewards = {'NoUCsm' 'plan_No_UCSp_cash' 'plan_UCSp_porn' 'unpl_No_UCSp_porn'};
 %% loading file tree
-home = '';%%home directory
+home = 'C:\Users\01140724\Documents\Kajetany\pupillometry-pre-processing';%%home directory
 addpath(genpath(home))
 cd (home)
 sub_list = dir([home '/dane']);
@@ -26,6 +26,8 @@ for k = 1 : length(sub_list)
     eeg1.setname = strcat(eeg1.setname, '_clues');
     eeg1.condition = 'clues';
     eeg1 = pop_rmbase( eeg1, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
+    eeg1 = addEpochInfo(eeg1);
+    eeg1 = eeg_checkset( eeg1 );
     [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg1);
     
     eeg = pop_epoch( eeg, rewards, [-3  8], 'epochinfo', 'yes');
@@ -33,10 +35,73 @@ for k = 1 : length(sub_list)
     eeg.setname = strcat(eeg.setname, '_rewards');
     eeg.condition = 'rewards';
     eeg = pop_rmbase( eeg, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
+    eeg = addEpochInfo(eeg);
+    eeg = eeg_checkset( eeg );
     [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg);
 end
 
+
+
 eeglab redraw
+%%
+%WARNING: function works with the assumption that data(5,:) corresond to
+%intervals_A and 6 correspond to intervals_B
+function eeg = addEpochInfo(eeg)
+    %%eeg.epoch.intervals_A
+    for i = 1 : length(eeg.epoch)
+        j = 1;
+        eeg.epoch(i).intervals_A = [];
+        while(j <= eeg.pnts)
+            if(eeg.data(5, j, i) == 1)
+                startJ = j;
+                while(eeg.data(5, j, i) == 1)
+                    if(j >= eeg.pnts)
+                        break;
+                    end
+                    j = j + 1;
+                end
+                eeg.epoch(i).intervals_A = [eeg.epoch(i).intervals_A; startJ, j];
+            end
+            j = j + 1;
+        end
+    end
+    
+    %%eeg.epoch.intervals_B
+    for i = 1 : length(eeg.epoch)
+        j = 1;
+        eeg.epoch(i).intervals_B = [];
+        while(j <= eeg.pnts)
+            if(eeg.data(6, j, i) == 1)
+                startJ = j;
+                while(eeg.data(6, j, i) == 1)
+                    if(j >= eeg.pnts)
+                        break;
+                    end
+                    j = j + 1;
+                end
+                eeg.epoch(i).intervals_B = [eeg.epoch(i).intervals_B; startJ, j];
+            end
+            j = j + 1;
+        end
+    end
+    
+    %%matlab is just stupid, to remove pos 5 and 6 we need to remove 5 2
+    %%times xd
+    eeg.data(5,:) = [];
+    eeg.data(5,:) = [];
+end
+%%
+function tmpIntervalsData = writeTempIntervalData(intervals, pnts)
+    tmpIntervalsData = zeros(1, pnts);
+    if (isempty(intervals))
+        return;
+    end
+    
+    [rows, ~] = size(intervals);
+    for i = 1 : rows-1
+        tmpIntervalsData(intervals(i, 1) : intervals(i, 2)) = 1;
+    end
+end
 %%
 function interpolatedData = interpolateIntervals(data, intervals)
     MEAN_RANGE = 3;
@@ -108,7 +173,6 @@ function intervals = getIntervals(M)
     intervals(garbbage,:) = [];
     
 end
-
 %%
 function eeg = loadEegSet(file)
     DEBUG_PLOT = true;
@@ -195,11 +259,18 @@ function eeg = loadEegSet(file)
     %% setting data   
     eeg.pnts = length([s(:).TotalTime]);
     eeg.times(1,:) = [s(:).TotalTime];
+    
+    eeg.intervals_A = getIntervals(w2h_A);
+    eeg.intervals_B = getIntervals(w2h_B);
      
-    eeg.data(1,:) = interpolateIntervals([s(:).A_PupilDiam], getIntervals(w2h_A));
-    eeg.data(2,:) = interpolateIntervals([s(:).B_PupilDiam], getIntervals(w2h_B));
+    eeg.data(1,:) = interpolateIntervals([s(:).A_PupilDiam], eeg.intervals_A);
+    eeg.data(2,:) = interpolateIntervals([s(:).B_PupilDiam], eeg.intervals_B);
+    %chan 3 and 4 DEBUG
     eeg.data(3,:) = [s(:).A_PupilDiam];
     eeg.data(4,:) = [s(:).B_PupilDiam];
+    %chan 5 and 6 temp (will be removed after cuting into epoch)
+    eeg.data(5,:) = writeTempIntervalData(eeg.intervals_A, eeg.pnts);
+    eeg.data(6,:) = writeTempIntervalData(eeg.intervals_B, eeg.pnts);
     
     if(DEBUG_PLOT)
         figure(11);
