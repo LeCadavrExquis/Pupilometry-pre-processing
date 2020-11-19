@@ -1,11 +1,45 @@
+%% const variables
+MEAN_RANGE = 5;
+w2h_UPPER_THRESHOLD = 1.3;
+w2h_LOWER_THRESHOLD = 0.7;
+MIN_INTERVAL_DISTANCE = 13;
+INTERPOLATION_OFFSET = 3;
+%%map to define group of an entity (control or study)
+mapObj = containers.Map(...
+    {'11210595','51827474','52645476','32430400','87737653',...
+    '69189805','79234988','27616904','39540956','69612942',...
+    '98985498','47422828','34889963','73122277','1251385',...
+    '25014271','20347401','47586985','13453690','2537837',...
+    '59604537','61422198','58797805','68045039','37508289',...
+    '44760927','86833022','52280506','81860530','5126762',...
+    '66115912','12051804','40336340','43672168','33031682',...
+    '32837660','99146114','90247624','29594651','55249888',...
+    '68943735','74856862','43112780','43514922','56243357',...
+    '96148024','71180240','31269370','67723944','27966735',...
+    '35921992','40080017','35698956','74178062','96601161',...
+    '37160569','91218349','55491908','78047215','83653635',...
+    '51446032','37760537','18366622','27485404','96770788',...
+    '54578671','21523076','62656247','15246096','41774881',...
+    '61744545','94988288','10155690','35213365','88281458',...
+    '9622354','4529209','75524371','19861910','34636726',...
+    '92551357','93822148','55270203','84206351','44296699',...
+    '72240241'},...
+    {'1','1','2','1','2','2','2','1','1','1','2','1','2','2','1',...
+    '1','1','2','2','1','2','1','1','1','1','2','1','1','2','1','1',...
+    '2','2','1','1','2','2','2','1','1','2','2','2','1','1','2','1',...
+    '2','1','2','2','1','1','1','2','3','3','3','3','3','3','3','3',...
+    '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',...
+    '3','3','3','3','3','3','3'});
 %%epoch cutting conditions
 clues = {  'CS_Minus' 'to_win_CS_Plus_Cash' 'to_lose_CS_Plus_Cash' 'to_lose_CS_Plus_Porn'    'to_win_CS_Plus_Porn'  };
 rewards = {'NoUCsm' 'plan_No_UCSp_cash' 'plan_UCSp_porn' 'unpl_No_UCSp_porn'};
+%%
+errorHandler = [];
 %% loading file tree
-home = 'C:\Users\01140724\Documents\Kajetany\pupillometry-pre-processing';%%home directory
+home = 'C:\Users\01140724\Documents\Kajetany';%%home directory
 addpath(genpath(home))
 cd (home)
-sub_list = dir([home '/dane']);
+sub_list = dir([home '/ET']);
 
 %%delating "." and ".." directory
 sub_list(1:2) = [];
@@ -15,46 +49,88 @@ eeglab
 
 %%loading data into EEGLAB   
 
-for k = 1 : length(sub_list)
-    
-    eeg = loadEegSet(sub_list(k));
-    eeg = eeg_checkset( eeg );
-    
-    eeg1 = eeg;
-    eeg1 = pop_epoch( eeg1, clues, [-3  8], 'epochinfo', 'yes');
-    eeg1.setname = eeg1.setname(1: end - 7);
-    eeg1.setname = strcat(eeg1.setname, '_clues');
-    eeg1.condition = 'clues';
-    eeg1 = pop_rmbase( eeg1, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
-    eeg1 = addEpochInfo(eeg1);
-    eeg1 = eeg_checkset( eeg1 );
-    [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg1);
-    
-    eeg = pop_epoch( eeg, rewards, [-3  8], 'epochinfo', 'yes');
-    eeg.setname = eeg.setname(1: end - 7);
-    eeg.setname = strcat(eeg.setname, '_rewards');
-    eeg.condition = 'rewards';
-    eeg = pop_rmbase( eeg, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
-    eeg = addEpochInfo(eeg);
-    eeg = eeg_checkset( eeg );
-    [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg);
+if(isempty(sub_list))
+    throw(MException("data folder is empty or unable to read data"));
 end
 
+mkdir processedData;
+mkdir processedData kontrolna;
+mkdir processedData badawcza;
+mkdir(['./processedData/badawcza/jedzenie']);
+mkdir(['./processedData/badawcza/porno']);
 
+for k = 1 : length(sub_list)
+    
+    currentSubject = sub_list(k).name;
+    underscoresIndexes = strfind(currentSubject,'_');
+    currentSubject = currentSubject(1 : underscoresIndexes(1) - 1);
+    
+    if(~strcmp(currentSubject, '10155690'))
+       continue;
+    end
+    try
+        eeg = loadEegSet(sub_list(k), MEAN_RANGE, w2h_UPPER_THRESHOLD,...
+            w2h_LOWER_THRESHOLD, MIN_INTERVAL_DISTANCE, INTERPOLATION_OFFSET);
+        eeg = eeg_checkset( eeg );
+
+        eeg1 = eeg;
+        eeg1 = pop_epoch( eeg1, clues, [-4  8], 'epochinfo', 'yes');
+        eeg1.setname = eeg1.setname(1: end - 7);
+        eeg1.setname = strcat(eeg1.setname, '_clues');
+        eeg1.condition = 'clues';
+        eeg1 = pop_rmbase( eeg1, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
+        eeg1 = addEpochInfo(eeg1);
+        eeg1 = eeg_checkset( eeg1 );
+        [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg1);
+
+        eeg = pop_epoch( eeg, rewards, [-3  3], 'epochinfo', 'yes');
+        eeg.setname = eeg.setname(1: end - 7);
+        eeg.setname = strcat(eeg.setname, '_rewards');
+        eeg.condition = 'rewards';
+        eeg = pop_rmbase( eeg, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
+        eeg = addEpochInfo(eeg);
+        eeg = eeg_checkset( eeg );
+        [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg);
+        
+        try
+            if(str2num(mapObj(currentSubject)) == 1)
+               mkdir(['./processedData/badawcza/porno/', currentSubject]); 
+               pop_saveset(eeg, eeg.setname, ['./processedData/badawcza/porno/', currentSubject])
+               pop_saveset(eeg1, eeg1.setname, ['./processedData/badawcza/porno/', currentSubject])
+               copyfile([sub_list(k).folder, '\', sub_list(k).name],['./processedData/badawcza/porno/', currentSubject] )
+            elseif(str2num(mapObj(currentSubject)) == 2)
+               mkdir(['./processedData/badawcza/jedzenie/', currentSubject]);
+               pop_saveset(eeg, eeg.setname, ['./processedData/badawcza/jedzenie/', currentSubject])
+               pop_saveset(eeg1, eeg1.setname, ['./processedData/badawcza/jedzenie/', currentSubject])
+               copyfile([sub_list(k).folder, '\', sub_list(k).name],['./processedData/badawcza/jedzenie/', currentSubject] )
+            elseif(str2num(mapObj(currentSubject)) == 3)
+               mkdir(['./processedData/kontrolna/', currentSubject]);
+               pop_saveset(eeg, eeg.setname, ['./processedData/kontrolna/', currentSubject])
+               pop_saveset(eeg1, eeg1.setname, ['./processedData/kontrolna/', currentSubject])
+               copyfile([sub_list(k).folder, '\', sub_list(k).name],['./processedData/kontrolna/', currentSubject] )
+            end
+        catch e
+            errorHandler = [errorHandler; "Unable to define group of subject : ", currentSubject];
+        end
+    catch exeption
+        errorHandler = [errorHandler;"Problem occured reading : ", sub_list(k).name];
+    end
+
+end
 
 eeglab redraw
 %%
-%WARNING: function works with the assumption that data(5,:) corresond to
-%intervals_A and 6 correspond to intervals_B
+%WARNING: function works with the assumption that data(3,:) corresond to
+%intervals_A and 4 correspond to intervals_B
 function eeg = addEpochInfo(eeg)
     %%eeg.epoch.intervals_A
     for i = 1 : length(eeg.epoch)
         j = 1;
         eeg.epoch(i).intervals_A = [];
         while(j <= eeg.pnts)
-            if(eeg.data(5, j, i) == 1)
+            if(eeg.data(3, j, i) == 1)
                 startJ = j;
-                while(eeg.data(5, j, i) == 1)
+                while(eeg.data(3, j, i) == 1)
                     if(j >= eeg.pnts)
                         break;
                     end
@@ -71,9 +147,9 @@ function eeg = addEpochInfo(eeg)
         j = 1;
         eeg.epoch(i).intervals_B = [];
         while(j <= eeg.pnts)
-            if(eeg.data(6, j, i) == 1)
+            if(eeg.data(4, j, i) == 1)
                 startJ = j;
-                while(eeg.data(6, j, i) == 1)
+                while(eeg.data(4, j, i) == 1)
                     if(j >= eeg.pnts)
                         break;
                     end
@@ -85,10 +161,15 @@ function eeg = addEpochInfo(eeg)
         end
     end
     
-    %%matlab is just stupid, to remove pos 5 and 6 we need to remove 5 2
-    %%times xd
-    eeg.data(5,:) = [];
-    eeg.data(5,:) = [];
+    %%percentage of interpolated data    
+    for i = 1 : length(eeg.epoch)
+        eeg.epoch(i).noisePercentage_A = 100 * sum(eeg.data(3,:,i))/size(eeg.data, 2);
+        eeg.epoch(i).noisePercentage_B = 100 * sum(eeg.data(4,:,i))/size(eeg.data, 2);
+    end
+    
+    %%matlab is just stupid
+    eeg.data(3,:,:) = [];
+    eeg.data(3,:,:) = [];
 end
 %%
 function tmpIntervalsData = writeTempIntervalData(intervals, pnts)
@@ -103,22 +184,25 @@ function tmpIntervalsData = writeTempIntervalData(intervals, pnts)
     end
 end
 %%
-function interpolatedData = interpolateIntervals(data, intervals)
-    MEAN_RANGE = 3;
+function interpolatedData = interpolateIntervals(data, intervals, MEAN_RANGE)
     interpolatedData = [];
     counter = 1;
     [intervalsRows,~] = size(intervals);
-    stop = intervals(counter,1);
-    if (stop <= MEAN_RANGE + 1)
-        %TODO
-        stop = MEAN_RANGE + 1 + 1;
+    stop = -1;
+    if(~isempty(intervals))
+        stop = intervals(counter,1);       
+        if (stop <= MEAN_RANGE + 1)
+            stop = MEAN_RANGE + 1 + 1;
+        end
+        if(intervals(end, 2) >= length(data) - MEAN_RANGE - 1)
+            intervals(end,2) = length(data) - MEAN_RANGE - 1;
+        end
     end
-    if(intervals(end, 2) >= length(data) - MEAN_RANGE - 1)
-        intervals(end,2) = length(data) - MEAN_RANGE - 1;
-    end
+
     i = 1;
     while(i <= length(data))
         if(i == stop)
+            interpolatedData = interpolatedData(1:end);
             interpolatedData = [interpolatedData,...
                 linspace(mean(data(stop - MEAN_RANGE - 1 : stop - 1)),...
                          mean(data(intervals(counter, 2) + 1 : intervals(counter, 2) + 1 + MEAN_RANGE)), ...
@@ -135,19 +219,17 @@ function interpolatedData = interpolateIntervals(data, intervals)
     end
 end
 %%
-function intervals = getIntervals(M)
+function intervals = getIntervals(M, w2h_UPPER_THRESHOLD, w2h_LOWER_THRESHOLD, MIN_INTERVAL_DISTANCE, INTERPOLATION_OFFSET)
     intervals = [];
-    w2h_UPPER_THRESHOLD = 1.2;
-    w2h_LOWER_THRESHOLD = 0.8;
     tmp = NaN;
     for i = 1 : length(M)
         if(M(i) > w2h_UPPER_THRESHOLD || M(i) < w2h_LOWER_THRESHOLD)
             if(isnan(tmp))
-                tmp = i;
+                tmp = i - INTERPOLATION_OFFSET;
             end
         else
             if(~isnan(tmp))
-                intervals = [intervals; tmp, i]; %#ok<AGROW>
+                intervals = [intervals; tmp, i + INTERPOLATION_OFFSET]; %#ok<AGROW>
                 tmp = NaN;
             end
         end
@@ -157,7 +239,6 @@ function intervals = getIntervals(M)
        intervals = [intervals; tmp, length(M)]; %#ok<AGROW>
     end    
     %% suming close intervals
-    MIN_INTERVAL_DISTANCE = 10;
     [rows, ~] = size(intervals);
     garbbage = [];
     for i = 1 : rows-1
@@ -166,7 +247,9 @@ function intervals = getIntervals(M)
             garbbage = [garbbage; i];
         end
     end
-    
+    if(isempty(intervals) || rows < 2)
+        return
+    end
     intervals(rows, 1) = intervals(rows-1,1);
     garbbage = [garbbage; rows-1];
     
@@ -174,7 +257,7 @@ function intervals = getIntervals(M)
     
 end
 %%
-function eeg = loadEegSet(file)
+function eeg = loadEegSet(file, MEAN_RANGE, w2h_UPPER_THRESHOLD, w2h_LOWER_THRESHOLD, MIN_INTERVAL_DISTANCE, INTERPOLATION_OFFSET)
     DEBUG_PLOT = true;
 
     eeg = eeg_emptyset();
@@ -260,17 +343,21 @@ function eeg = loadEegSet(file)
     eeg.pnts = length([s(:).TotalTime]);
     eeg.times(1,:) = [s(:).TotalTime];
     
-    eeg.intervals_A = getIntervals(w2h_A);
-    eeg.intervals_B = getIntervals(w2h_B);
+    eeg.intervals_A = getIntervals(w2h_A, w2h_UPPER_THRESHOLD, w2h_LOWER_THRESHOLD, MIN_INTERVAL_DISTANCE, INTERPOLATION_OFFSET);
+    eeg.intervals_B = getIntervals(w2h_B, w2h_UPPER_THRESHOLD, w2h_LOWER_THRESHOLD, MIN_INTERVAL_DISTANCE, INTERPOLATION_OFFSET);
      
-    eeg.data(1,:) = interpolateIntervals([s(:).A_PupilDiam], eeg.intervals_A);
-    eeg.data(2,:) = interpolateIntervals([s(:).B_PupilDiam], eeg.intervals_B);
-    %chan 3 and 4 DEBUG
-    eeg.data(3,:) = [s(:).A_PupilDiam];
-    eeg.data(4,:) = [s(:).B_PupilDiam];
-    %chan 5 and 6 temp (will be removed after cuting into epoch)
-    eeg.data(5,:) = writeTempIntervalData(eeg.intervals_A, eeg.pnts);
-    eeg.data(6,:) = writeTempIntervalData(eeg.intervals_B, eeg.pnts);
+    eeg.data(1,:) = interpolateIntervals([s(:).A_PupilDiam], eeg.intervals_A, MEAN_RANGE);
+    eeg.data(2,:) = interpolateIntervals([s(:).B_PupilDiam], eeg.intervals_B, MEAN_RANGE);
+    %chan 3 and 4 temp (will be removed after cuting into epoch)
+    eeg.data(3,:) = writeTempIntervalData(eeg.intervals_A, eeg.pnts);
+    eeg.data(4,:) = writeTempIntervalData(eeg.intervals_B, eeg.pnts);
+    %chan 5 and 6 DEBUG
+    eeg.data(5,:) = [s(:).A_PupilDiam];
+    eeg.data(6,:) = [s(:).B_PupilDiam];
+
+    %%chan 7 8
+%     eeg.data(7,:) = w2h_A;
+%     eeg.data(8,:) = w2h_B;
     
     if(DEBUG_PLOT)
         figure(11);
