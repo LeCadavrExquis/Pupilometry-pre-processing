@@ -4,7 +4,12 @@ w2h_UPPER_THRESHOLD = 1.3;
 w2h_LOWER_THRESHOLD = 0.7;
 MIN_INTERVAL_DISTANCE = 13;
 INTERPOLATION_OFFSET = 3;
+START_RANGE_REWARDS = -3;
+END_RANGE_REWARDS = 3;
+START_RANGE_CLUES = -4;
+END_RANGE_CLUES = 8;
 %%map to define group of an entity (control or study)
+%%read data from csv
 mapObj = containers.Map(...
     {'11210595','51827474','52645476','32430400','87737653',...
     '69189805','79234988','27616904','39540956','69612942',...
@@ -32,7 +37,7 @@ mapObj = containers.Map(...
     '3','3','3','3','3','3','3'});
 %%epoch cutting conditions
 clues = {  'CS_Minus' 'to_win_CS_Plus_Cash' 'to_lose_CS_Plus_Cash' 'to_lose_CS_Plus_Porn'    'to_win_CS_Plus_Porn'  };
-rewards = {'NoUCsm' 'plan_No_UCSp_cash' 'plan_UCSp_porn' 'unpl_No_UCSp_porn'};
+rewards = {'NoUCsm'          'plan_No_UCSp_cash'   'plan_No_UCSp_porn'             'plan_UCSp_porn'   'plan_UCSp_cash'              'unpl_No_UCSp_porn' 'unpl_No_UCSp_cash'      'unpl_UCSp_cash'  'unpl_UCSp_porn' };
 %%
 errorHandler = [];
 %% loading file tree
@@ -65,7 +70,9 @@ for k = 1 : length(sub_list)
     underscoresIndexes = strfind(currentSubject,'_');
     currentSubject = currentSubject(1 : underscoresIndexes(1) - 1);
     
-    if(~strcmp(currentSubject, '10155690'))
+    reportEntity.name = sub_list(k).name;
+    
+    if(~strcmp(currentSubject, '05126762'))
        continue;
     end
     try
@@ -74,25 +81,33 @@ for k = 1 : length(sub_list)
         eeg = eeg_checkset( eeg );
 
         eeg1 = eeg;
-        eeg1 = pop_epoch( eeg1, clues, [-4  8], 'epochinfo', 'yes');
+        eeg1 = pop_epoch( eeg1, clues, [START_RANGE_CLUES  END_RANGE_CLUES], 'epochinfo', 'yes');
         eeg1.setname = eeg1.setname(1: end - 7);
         eeg1.setname = strcat(eeg1.setname, '_clues');
         eeg1.condition = 'clues';
-        eeg1 = pop_rmbase( eeg1, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
         eeg1 = addEpochInfo(eeg1);
+        eeg1 = eeg_checkset(eeg1);
+        eeg1 = pop_rmbase( eeg1, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
         eeg1 = eeg_checkset( eeg1 );
         [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg1);
 
-        eeg = pop_epoch( eeg, rewards, [-3  3], 'epochinfo', 'yes');
+        eeg = pop_epoch( eeg, rewards, [START_RANGE_REWARDS  END_RANGE_REWARDS], 'epochinfo', 'yes');
         eeg.setname = eeg.setname(1: end - 7);
         eeg.setname = strcat(eeg.setname, '_rewards');
         eeg.condition = 'rewards';
-        eeg = pop_rmbase( eeg, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
         eeg = addEpochInfo(eeg);
+        eeg = eeg_checkset(eeg);
+        eeg = pop_rmbase( eeg, [-300    0]); %rmbase_qb zmienia na procentowy baseline (divisive as opposed to substractive)
         eeg = eeg_checkset( eeg );
         [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg);
         
+        reportEntity.epochPercentClues_A = [eeg1.epoch.noisePercentage_A];
+        reportEntity.epochPercentClues_B = [eeg1.epoch.noisePercentage_B];
+        reportEntity.epochPercentRewards_A = [eeg.epoch.noisePercentage_A];
+        reportEntity.epochPercentRewards_B = [eeg.epoch.noisePercentage_B];
+        
         try
+            %przyjscie pierwsze drugie przyjscie
             if(str2num(mapObj(currentSubject)) == 1)
                mkdir(['./processedData/badawcza/porno/', currentSubject]); 
                pop_saveset(eeg, eeg.setname, ['./processedData/badawcza/porno/', currentSubject])
@@ -112,7 +127,7 @@ for k = 1 : length(sub_list)
         catch e
             errorHandler = [errorHandler; "Unable to define group of subject : ", currentSubject];
         end
-    catch exeption
+    catch e
         errorHandler = [errorHandler;"Problem occured reading : ", sub_list(k).name];
     end
 
@@ -258,7 +273,7 @@ function intervals = getIntervals(M, w2h_UPPER_THRESHOLD, w2h_LOWER_THRESHOLD, M
 end
 %%
 function eeg = loadEegSet(file, MEAN_RANGE, w2h_UPPER_THRESHOLD, w2h_LOWER_THRESHOLD, MIN_INTERVAL_DISTANCE, INTERPOLATION_OFFSET)
-    DEBUG_PLOT = true;
+    DEBUG_PLOT = false;
 
     eeg = eeg_emptyset();
     
@@ -302,6 +317,7 @@ function eeg = loadEegSet(file, MEAN_RANGE, w2h_UPPER_THRESHOLD, w2h_LOWER_THRES
     clear t    
     
     %% loading events
+    
     events = [];
     for i = 1:length(s)
         if s(i).ev_index == 12
