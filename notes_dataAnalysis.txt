@@ -1,0 +1,27 @@
+dane2: dodatkowe bardziej wyspecjalizowane okna (subokkno)
+
++evnts się nie zgadzają dlaczego ???
+
+dane: 
+
+sctter plot -> nie
+
+histogram -> % - n
+	z lepszego oka - n
+	
+	osobno dla clues i rewards
+
+	uśrednienie dla każdego run'a (dla różnych markerów) - przebieg (3A i 3B)
+	 [1 z 2, 3 z 4] - porównanie 
+
+
+
+"iap" plot ->	1 2 1 2 1 2 
+		3 4 3 4 4 5 
+
+		2 3 2 3  -> [eeglab] macierz subplotów - scala ta sama na y !!! - dopasuj scalę !!!
+
+brudnopis: unpl_No_UCSp_porn
+
+
+
