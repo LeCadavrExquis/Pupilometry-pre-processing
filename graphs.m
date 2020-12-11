@@ -1,34 +1,15 @@
-% %%betterEyeClues
-% for i = 1 : length(raport)
-%     for j = 1 : length(raport(i).epochPercentClues_A)
-%         betterEyeClues.name = raport(i).name;
-%         if(raport(i).epochPercentClues_A(j) < raport(i).epochPercentClues_A(j))
-%             betterEyeClues.betterEye = 'A';
-%         else
-%             betterEyeClues.betterEye = 'B';
-%         end
-%     end
-% end
-% 
-% %%betterEyeRewards
-% for i = 1 : length(raport)
-%     for j = 1 : length(raport(i).epochPercentRewards_A)
-%         betterEyeRewards(i).name = raport(i).name;
-%         if(raport(i).epochPercentRewards_B(j) < raport(i).epochPercentRewards_A(j))
-%             betterEyeRewards(i).betterEye = 'A';
-%         else
-%             betterEyeRewards(i).betterEye = 'B';
-%         end
-%     end
-% end
-
-%%histogram
+mkdir 2;
+cd 2;
 subjects = keys(mapObj);
 histogramData = [];
+figure();
 for i = 1 : length(subjects)
+    subject = subjects{i};
+    mkdir(subject);
+    cd(subject);
+    %%histogramData
     tmpSession1 = [];
     tmpSession2 = [];
-    subject = subjects{i};
     for j = 1 : length(ALLEEG)
         if(strcmp(string(ALLEEG(j).subject), string(subject)))
             if(ALLEEG(j).group == 1)
@@ -40,6 +21,54 @@ for i = 1 : length(subjects)
                     raport(ceil(j/2)).epochPercentRewards_A,...
                     raport(ceil(j/2)).epochPercentRewards_B));
             end
+%             %collecting events names
+%             for k = 1 : length(ALLEEG(j).event)
+%                 events(k) = convertCharsToStrings(ALLEEG(j).event(k).type);
+%             end
+%             events = unique(events);
+%                         
+%             for k = 1 : length(events)
+%                 tmpData = [];
+%                 for l = 1 : size(ALLEEG(j).data,3)
+%                     if(strcmp(events(k), convertCharsToStrings(ALLEEG(j).epoch(l).eventtype)))
+%                         if(strcmp(convertCharsToStrings(ALLEEG(j).condition), "rewards"))
+%                             if(raport(ceil(j/2)).epochPercentRewards_A(l) < ...
+%                                     raport(ceil(j/2)).epochPercentRewards_B(l))
+%                                 tmpData = [tmpData; ALLEEG(j).data(1,:,l)];
+%                             else
+%                                 tmpData = [tmpData; ALLEEG(j).data(2,:,l)];
+%                             end
+%                         else
+%                             if(raport(ceil(j/2)).epochPercentClues_A(l) < ...
+%                                     raport(ceil(j/2)).epochPercentClues_B(l))
+%                                 tmpData = [tmpData; ALLEEG(j).data(1,:,l)];
+%                             else
+%                                 tmpData = [tmpData; ALLEEG(j).data(2,:,l)];
+%                             end
+%                         end
+%                     end
+% 
+%                 end
+%                 
+%                 %ploting
+%                 if(isempty(tmpData))
+%                     disp(sonversubject"")
+%                 end
+%                 for l = 1 : size(tmpData,1)
+%                     subplot(2, ceil((size(tmpData,1)+1)/2), l);
+%                     plot(ALLEEG(j).times, tmpData(l,:));
+%                     xline(0);
+%                     ylim([-0.1,0.1]);
+%                 end
+%                 subplot(2, ceil((size(tmpData,1)+1)/2), (l+1));
+%                 plot(ALLEEG(j).times, mean(tmpData));
+%                 xline(0);
+%                 ylim([-0.1,0.1]);
+%                 title("mean");
+%                 sgtitle(subject + " | run:" + string(ALLEEG(j).session) + " | session:" + string(ALLEEG(j).group)...
+%                     + " | " + events(k) + "[" + convertCharsToStrings(ALLEEG(j).condition) + "]");
+%                 saveas(gcf,events(k) + ".fig");
+%             end
         end
     end
     if(~isempty(tmpSession1))
@@ -48,9 +77,8 @@ for i = 1 : length(subjects)
     if(~isempty(tmpSession2))
         histogramData = [histogramData, mean(tmpSession2)];
     end
-
+    cd ..;
 end
-figure();
 histogram(histogramData,10);
 xlabel('%');
 ylabel('Count');
@@ -58,48 +86,7 @@ title("Histogram of % interpolation Sessions(" + ...
     length(histogramData) + ") - [better eye]");
 xline(20);
 legend(moreThan20(histogramData) + "% epochs are interpolated more than 20%");
-% 
-% 
-% clues = {'CS_Minus' 'to_win_CS_Plus_Cash' 'to_lose_CS_Plus_Cash' 'to_lose_CS_Plus_Porn' 'to_win_CS_Plus_Porn'};
-% rewards = {'NoUCsm' 'plan_No_UCSp_cash' 'plan_No_UCSp_porn' 'plan_UCSp_porn' 'plan_UCSp_cash' 'unpl_No_UCSp_porn' 'unpl_No_UCSp_cash' 'unpl_UCSp_cash' 'unpl_UCSp_porn' };
-% 
-% sampleEEG = ALLEEG(1);
-% 
-% figure();
-% %for i = 1 : length(clues)
-%     epochIndexes = searchEpoch(sampleEEG.epoch, 'CS_Minus');
-%     
-%     sum = 0;
-%     for j = 1 : length(epochIndexes)
-%         sum = sum + sampleEEG.data(1,:,epochIndexes(j));
-%         
-%         subplot(2, ceil(length(epochIndexes)/2), j);
-%         plot(sampleEEG.times, sampleEEG.data(1,:,epochIndexes(j)));
-%         title("epoch " + string(j));
-%         xline(0);
-%     end
-%     
-%     meanVector = sum/length(epochIndexes);
-%     
-%     subplot(2, ceil(length(epochIndexes)/2), j);
-%     plot(sampleEEG.times, meanVector);
-%     title("mean");
-%     xline(0);
-%     sgtitle('CS_Minus');
-%     saveas(gcf,'Barchart.png')
-% 
-% %end
-
-
-
-function epochIndexes = searchEpoch(data, eventName)
-    epochIndexes = [];
-    for i = 1 : length(data)
-        if(strcmp(string(data(i).eventtype), string(eventName)))
-            epochIndexes = [epochIndexes, i];
-        end
-    end
-end
+saveas(gcf, "hist.fig");
 
 function x = getBetterEye(A, B)
     x = zeros(1,length(A));
