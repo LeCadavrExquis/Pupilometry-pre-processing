@@ -4,10 +4,10 @@ w2h_UPPER_THRESHOLD = 1.3;
 w2h_LOWER_THRESHOLD = 0.7;
 MIN_INTERVAL_DISTANCE = 13;
 INTERPOLATION_OFFSET = 3;
-START_RANGE_REWARDS = -3;
-END_RANGE_REWARDS = 3;
-START_RANGE_CLUES = -4;
-END_RANGE_CLUES = 8;
+START_RANGE_REWARDS = -1;
+END_RANGE_REWARDS = 2.5;
+START_RANGE_CLUES = -1;
+END_RANGE_CLUES = 5;
 %%map to define group of an entity (control or study)
 %%read data from csv
 mapObj = containers.Map(...
@@ -36,12 +36,13 @@ mapObj = containers.Map(...
     '3','3','3','3','3','3','3','3','3','3','3','3','3','3','3','3',...
     '3','3','3','3','3','3','3'});
 %%epoch cutting conditions
-clues = {  'CS_Minus' 'to_win_CS_Plus_Cash' 'to_lose_CS_Plus_Cash' 'to_lose_CS_Plus_Porn'    'to_win_CS_Plus_Porn'  };
-rewards = {'NoUCsm'          'plan_No_UCSp_cash'   'plan_No_UCSp_porn'             'plan_UCSp_porn'   'plan_UCSp_cash'              'unpl_No_UCSp_porn' 'unpl_No_UCSp_cash'      'unpl_UCSp_cash'  'unpl_UCSp_porn' };
+clues = {'CS_Minus' 'to_win_CS_Plus_Cash' 'to_lose_CS_Plus_Cash' 'to_lose_CS_Plus_Porn' 'to_win_CS_Plus_Porn'};
+rewards = {'NoUCsm' 'plan_No_UCSp_cash' 'plan_No_UCSp_porn' 'plan_UCSp_porn' 'plan_UCSp_cash' 'unpl_No_UCSp_porn' 'unpl_No_UCSp_cash' 'unpl_UCSp_cash' 'unpl_UCSp_porn' };
 %%
 errorHandler = [];
+raport = [];
 %% loading file tree
-home = 'C:\Users\01140724\Documents\Kajetany';%%home directory
+home = '/home/filip/Dokumenty/Kajetany/Hiperseksualność';%%home directory
 addpath(genpath(home))
 cd (home)
 sub_list = dir([home '/ET']);
@@ -49,7 +50,7 @@ sub_list = dir([home '/ET']);
 %%delating "." and ".." directory
 sub_list(1:2) = [];
 
-%%loading eeglab
+%%loading eeglab..
 eeglab
 
 %%loading data into EEGLAB   
@@ -58,11 +59,11 @@ if(isempty(sub_list))
     throw(MException("data folder is empty or unable to read data"));
 end
 
-mkdir processedData;
-mkdir processedData kontrolna;
-mkdir processedData badawcza;
-mkdir(['./processedData/badawcza/jedzenie']);
-mkdir(['./processedData/badawcza/porno']);
+% mkdir processedData;
+% mkdir processedData kontrolna;
+% mkdir processedData badawcza;
+% mkdir(['./processedData/badawcza/jedzenie']);
+% mkdir(['./processedData/badawcza/porno']);
 
 for k = 1 : length(sub_list)
     
@@ -72,9 +73,9 @@ for k = 1 : length(sub_list)
     
     reportEntity.name = sub_list(k).name;
     
-    if(~strcmp(currentSubject, '05126762'))
-       continue;
-    end
+%     if(~strcmp(currentSubject, '11210595'))
+%        continue;
+%     end
     try
         eeg = loadEegSet(sub_list(k), MEAN_RANGE, w2h_UPPER_THRESHOLD,...
             w2h_LOWER_THRESHOLD, MIN_INTERVAL_DISTANCE, INTERPOLATION_OFFSET);
@@ -106,23 +107,25 @@ for k = 1 : length(sub_list)
         reportEntity.epochPercentRewards_A = [eeg.epoch.noisePercentage_A];
         reportEntity.epochPercentRewards_B = [eeg.epoch.noisePercentage_B];
         
+        raport = [raport;reportEntity];
+        
         try
             %przyjscie pierwsze drugie przyjscie
             if(str2num(mapObj(currentSubject)) == 1)
-               mkdir(['./processedData/badawcza/porno/', currentSubject]); 
-               pop_saveset(eeg, eeg.setname, ['./processedData/badawcza/porno/', currentSubject])
-               pop_saveset(eeg1, eeg1.setname, ['./processedData/badawcza/porno/', currentSubject])
-               copyfile([sub_list(k).folder, '\', sub_list(k).name],['./processedData/badawcza/porno/', currentSubject] )
+%                mkdir(['./processedData/badawcza/porno/', currentSubject]); 
+%                pop_saveset(eeg, eeg.setname, ['./processedData/badawcza/porno/', currentSubject])
+%                pop_saveset(eeg1, eeg1.setname, ['./processedData/badawcza/porno/', currentSubject])
+%                copyfile([sub_list(k).folder, '\', sub_list(k).name],['./processedData/badawcza/porno/', currentSubject] )
             elseif(str2num(mapObj(currentSubject)) == 2)
-               mkdir(['./processedData/badawcza/jedzenie/', currentSubject]);
-               pop_saveset(eeg, eeg.setname, ['./processedData/badawcza/jedzenie/', currentSubject])
-               pop_saveset(eeg1, eeg1.setname, ['./processedData/badawcza/jedzenie/', currentSubject])
-               copyfile([sub_list(k).folder, '\', sub_list(k).name],['./processedData/badawcza/jedzenie/', currentSubject] )
+%                mkdir(['./processedData/badawcza/jedzenie/', currentSubject]);
+%                pop_saveset(eeg, eeg.setname, ['./processedData/badawcza/jedzenie/', currentSubject])
+%                pop_saveset(eeg1, eeg1.setname, ['./processedData/badawcza/jedzenie/', currentSubject])
+%                copyfile([sub_list(k).folder, '\', sub_list(k).name],['./processedData/badawcza/jedzenie/', currentSubject] )
             elseif(str2num(mapObj(currentSubject)) == 3)
-               mkdir(['./processedData/kontrolna/', currentSubject]);
-               pop_saveset(eeg, eeg.setname, ['./processedData/kontrolna/', currentSubject])
-               pop_saveset(eeg1, eeg1.setname, ['./processedData/kontrolna/', currentSubject])
-               copyfile([sub_list(k).folder, '\', sub_list(k).name],['./processedData/kontrolna/', currentSubject] )
+%                mkdir(['./processedData/kontrolna/', currentSubject]);
+%                pop_saveset(eeg, eeg.setname, ['./processedData/kontrolna/', currentSubject])
+%                pop_saveset(eeg1, eeg1.setname, ['./processedData/kontrolna/', currentSubject])
+%                copyfile([sub_list(k).folder, '\', sub_list(k).name],['./processedData/kontrolna/', currentSubject] )
             end
         catch e
             errorHandler = [errorHandler; "Unable to define group of subject : ", currentSubject];
@@ -191,6 +194,9 @@ function tmpIntervalsData = writeTempIntervalData(intervals, pnts)
     tmpIntervalsData = zeros(1, pnts);
     if (isempty(intervals))
         return;
+    end
+    if(intervals(1,1) < 1)
+        intervals(1,1) = 1;
     end
     
     [rows, ~] = size(intervals);
@@ -367,13 +373,6 @@ function eeg = loadEegSet(file, MEAN_RANGE, w2h_UPPER_THRESHOLD, w2h_LOWER_THRES
     %chan 3 and 4 temp (will be removed after cuting into epoch)
     eeg.data(3,:) = writeTempIntervalData(eeg.intervals_A, eeg.pnts);
     eeg.data(4,:) = writeTempIntervalData(eeg.intervals_B, eeg.pnts);
-    %chan 5 and 6 DEBUG
-    eeg.data(5,:) = [s(:).A_PupilDiam];
-    eeg.data(6,:) = [s(:).B_PupilDiam];
-
-    %%chan 7 8
-%     eeg.data(7,:) = w2h_A;
-%     eeg.data(8,:) = w2h_B;
     
     if(DEBUG_PLOT)
         figure(11);
