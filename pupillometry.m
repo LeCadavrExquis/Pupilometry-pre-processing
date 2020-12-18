@@ -82,6 +82,7 @@ for k = 1 : length(sub_list)
         eeg = eeg_checkset( eeg );
 
         eeg1 = eeg;
+        eeg1 = pop_eegfiltnew(eeg1, [],10,[],0,[],0);
         eeg1 = pop_epoch( eeg1, clues, [START_RANGE_CLUES  END_RANGE_CLUES], 'epochinfo', 'yes');
         eeg1.setname = eeg1.setname(1: end - 7);
         eeg1.setname = strcat(eeg1.setname, '_clues');
@@ -92,6 +93,7 @@ for k = 1 : length(sub_list)
         eeg1 = eeg_checkset( eeg1 );
         [ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, eeg1);
 
+        eeg = pop_eegfiltnew(eeg, [],10,[],0,[],0);
         eeg = pop_epoch( eeg, rewards, [START_RANGE_REWARDS  END_RANGE_REWARDS], 'epochinfo', 'yes');
         eeg.setname = eeg.setname(1: end - 7);
         eeg.setname = strcat(eeg.setname, '_rewards');
